@@ -35,3 +35,65 @@
  * ofxWordPalette also has helper functions to do fun stuff involving the length
  * of words
  */
+
+#pragma once
+
+#include "ofMain.h"
+#include "ofxFTGLFont.h"
+#include <set>
+
+typedef struct
+{
+    string word;
+    ofRectangle box;
+} WordWithSize;
+
+class ofxWordPalette : public ofBaseHasTexture
+{
+  public:    
+    ofxWordPalette();
+    ~ofxWordPalette();
+    
+	void setup(int paletteWidth, int paletteHeight, string fontPath, int fontSize, float padding = 5);
+
+	void setWords(string filePath); //search for words in the file, separated by whitespace
+	void setWords(vector<string> newWords);
+	
+    //use this if you are going to draw alot of words to avoid binding/unbinding
+    void bindPalette();
+    void drawWord(string word, ofVec2f point, float scale = 1.0);
+	void drawWord(WordWithSize& word, ofVec2f point, float scale = 1.0);
+
+    void unbindPalette(); //must call after done drawing if manually binding
+   
+	void drawTypePalette(ofVec2f point);
+    
+    void getBoundingTextureCoordsForWord(string word, ofVec2f coords[4]);
+    //fun helper functions
+    WordWithSize& getRandomWord();
+    //draws the word with the closest width
+    WordWithSize& getWordMatchingWidth(float width);
+	WordWithSize& getShortestWord();
+    WordWithSize& getLongestWord();
+
+	virtual ofTexture & getTextureReference();
+	virtual void setUseTexture(bool bUseTex);
+	
+  protected:
+    bool isSetup;
+    int maxLineHeight;
+    bool isBound;
+    
+	set<string> sourceWords;
+	
+    int paletteWidth;
+    int paletteHeight;
+    float padding;
+	
+    vector<WordWithSize> sortedwords; //sorted by length
+    map<string, WordWithSize> words; //accessed through 
+    
+    ofxFTGLFont font;
+    ofFbo typePalette;
+    
+};
