@@ -37,78 +37,65 @@
  */
 
 #include "testApp.h"
+#define IMAGE_WIDTH 640
+#define IMAGE_HEIGHT 480
 
 //--------------------------------------------------------------
 void testApp::setup(){
 	
 	ofSetFrameRate(30);
-	
 	ofEnableAlphaBlending();
 
-	words.setup(2048, 1024, "verdana.ttf", 18);
+	words.setup(2048, 1024, "verdana.ttf", 8);
 	words.setWords("poe.txt");
 	
-	bool oddRow = false;
-	for(int y = -200; y < ofGetHeight()+200; y += 20){
-		for(int x = -200; x < ofGetWidth()+200; x += 20){
-			ofVec2f position = ofVec2f();
-			position.x = x;
-			if(oddRow){
-				position.x += 10;
-			}
-			position.y = y;
-			points.push_back( position );
-		}
-		oddRow = !oddRow;
-	}
+	vidGrabber.setVerbose(true);
+	vidGrabber.initGrabber(IMAGE_WIDTH,IMAGE_HEIGHT);
+
+	colorImage.allocate(IMAGE_WIDTH,IMAGE_HEIGHT);
+	thisGrayImage.allocate(IMAGE_WIDTH,IMAGE_HEIGHT);
+    lastGrayImage.allocate(IMAGE_WIDTH,IMAGE_HEIGHT);
+	opticalFlow.allocate(IMAGE_WIDTH, IMAGE_HEIGHT);
 	
-	shortestWordLength = words.getShortestWord().box.width;
-	longestWordLength = words.getLongestWord().box.width;
+	firstFrame = true;
 }
 
 //--------------------------------------------------------------
 void testApp::update(){
-
+	vidGrabber.grabFrame();
+	if (vidGrabber.isFrameNew()){		
+		colorImage.setFromPixels(vidGrabber.getPixels(), IMAGE_WIDTH,IMAGE_HEIGHT);
+		
+		lastGrayImage = thisGrayImage;
+		thisGrayImage = colorImage;
+		if(!firstFrame){
+			opticalFlow.calc(lastGrayImage, thisGrayImage, 3);
+		}
+		firstFrame = false;
+	}
 }
 
 //--------------------------------------------------------------
 void testApp::draw(){
 	ofBackground(255);
-	
-//	words.drawTypePalette(ofVec2f(0,0));
 
-	//find the furthest and closest point
-	ofVec2f mousePoint(ofGetMouseX(), ofGetMouseY());
-	float greatestDistance = 0;
-	float leastDistance = INT_MAX;
-	for(int i = 0; i < points.size(); i++){
-		float thisDistance = mousePoint.distance(points[i]);
-		if(thisDistance > greatestDistance){
-			greatestDistance = thisDistance;
-		}
-		if (thisDistance < leastDistance) {
-			leastDistance = thisDistance;
-		}
+	for(int y = 0; y < IMAGE_HEIGHT; y += 5){
+		for(int x = 0; x < IMAGE_WIDTH; x += 5){
+			ofVec2f flow = opticalFlow.flowAtPoint(x, y);
+			ofVec2f direction = flow.normalized();
+			float length = flow.length();
+			if (length > 10) {
+				WordWithSize& w = words.getWordMatchingWidth(length);
+				ofPushMatrix();
+				ofTranslate(x, y);
+				ofRotate( atan2(direction.y, direction.x) * RAD_TO_DEG);
+				words.drawWord(w, ofVec2f(0,0) );
+				ofPopMatrix();
+			}
+		}	
 	}
+	ofPopMatrix();
 	
-	words.bindPalette();
-	//draw the points, scaling longest words far away and shortest words close to the mouse
-	//rotate the words to all point towards the mouse
-	for(int i = 0; i < points.size(); i++){
-		ofVec2f trajectory = mousePoint-points[i];
-		ofVec2f direction = trajectory.normalized();
-		float distanceToMouse = trajectory.length();
-		float wordSize = ofMap(distanceToMouse, leastDistance, greatestDistance, shortestWordLength, longestWordLength);
-		WordWithSize& w = words.getWordMatchingWidth(wordSize);
-		
-		ofPushMatrix();
-		ofTranslate(points[i]);
-		ofRotate( atan2(direction.y, direction.x) * RAD_TO_DEG);
-		words.drawWord(w, ofVec2f(0,0) );
-		ofPopMatrix();
-	}
-	
-	words.unbindPalette();
 }
 
 //--------------------------------------------------------------
