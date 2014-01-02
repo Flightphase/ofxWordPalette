@@ -69,7 +69,7 @@ void ofxWordPalette::setup(int _paletteWidth, int _paletteHeight, string fontPat
     	typePalette.allocate(paletteWidth, paletteHeight, GL_RGBA);    
     }
 	
-	if(!font.loadFont(fontPath, fontSize, true, false, false)){
+	if(!font.loadFont(fontPath, fontSize, true, false)){
         ofLog(OF_LOG_ERROR, "Couldn't load font " + fontPath);
         return;
     }

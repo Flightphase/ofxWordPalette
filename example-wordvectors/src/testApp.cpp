@@ -45,7 +45,7 @@ void testApp::setup(){
 	
 	ofEnableAlphaBlending();
 
-	words.setup(2048, 1024, "verdana.ttf", 18);
+	words.setup(2048, 1024, "verdana.ttf", 10);
 	words.setWords("poe.txt");
 	
 	bool oddRow = false;
